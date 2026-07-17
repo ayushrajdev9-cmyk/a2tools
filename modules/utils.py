@@ -1,54 +1,180 @@
 #!/usr/bin/env python3
-import os, sys, time, subprocess, platform
-from colorama import Fore, Style, init; init(autoreset=True)
-R=Fore.RED;G=Fore.GREEN;Y=Fore.YELLOW;B=Fore.BLUE;M=Fore.MAGENTA;C=Fore.CYAN;W=Fore.WHITE;RS=Style.RESET_ALL
+"""
+A2Tool v4.0 - Utilities Module
+Author: Ayush Rajdev & Anzar Iqbal
+"""
+
+import os, sys, subprocess, re, json, time, platform, socket, hashlib, random, string, threading
+from datetime import datetime
+try:
+    from colorama import Fore, Style, init
+    init(autoreset=True)
+except:
+    class Fore: RED=GREEN=YELLOW=BLUE=MAGENTA=CYAN=WHITE='';RESET=''
+    Style=Fore
+
+R=Fore.RED; G=Fore.GREEN; Y=Fore.YELLOW; B=Fore.BLUE
+M=Fore.MAGENTA; C=Fore.CYAN; W=Fore.WHITE; RS=Style.RESET_ALL
+
+OS_NAME = platform.system().lower()
+IS_WIN = OS_NAME == 'windows'
+IS_LNX = OS_NAME == 'linux'
+
+def _run(cmd, shell=True, timeout=30):
+    try: return subprocess.check_output(cmd, shell=shell, stderr=subprocess.STDOUT, timeout=timeout).decode('utf-8', errors='ignore')
+    except: return ''
 
 def run_external_tool(tool, choice, category):
-    print(f"\n{Y}[!] {tool} integration - Option {choice} in {category}{RS}")
-    print(f"{Y}[!] Use {tool} directly for full functionality.{RS}")
+    """Run an external tool with parameters"""
+    print(f"\n{Y}[!] Running {tool} (option {choice}) in {category} category{RS}")
+    if tool == 'nmap':
+        target = input(f"  {W}[?] Target: {RS}").strip()
+        print(f"{G}[+] Running nmap scan...{RS}")
+        os.system(f'nmap -sV {target}')
+    elif tool == 'sqlmap':
+        target = input(f"  {W}[?] Target URL: {RS}").strip()
+        print(f"{G}[+] Running sqlmap...{RS}")
+        os.system(f'sqlmap -u {target} --batch')
+    elif tool == 'hydra':
+        target = input(f"  {W}[?] Target: {RS}").strip()
+        service = input(f"  {W}[?] Service (ssh/ftp/http-post-form): {RS}").strip()
+        user = input(f"  {W}[?] Username: {RS}").strip()
+        wordlist = input(f"  {W}[?] Password list: {RS}").strip()
+        print(f"{G}[+] Running hydra...{RS}")
+        os.system(f'hydra -l {user} -P {wordlist} {target} {service}')
+    else:
+        print(f"{Y}[!] Tool {tool} not configured. Running raw...{RS}")
+        os.system(f'{tool} --help 2>/dev/null || echo "Tool not found"')
+    
+    input(f"\n{Y}[+] Press Enter to continue...{RS}")
 
 def system_info_dump(choice):
-    if choice=='1':
-        print(f"\n{C}[*] System Info:{RS}")
-        print(f"  {W}OS: {platform.system()} {platform.release()}{RS}")
-        print(f"  {W}Node: {platform.node()}{RS}")
-        print(f"  {W}Arch: {platform.machine()}{RS}")
-        if os.name=='nt':
-            try:
-                out=subprocess.check_output('systeminfo | findstr /B /C:"OS Name" /C:"OS Version"',shell=True,timeout=15).decode()
-                print(out)
-            except: pass
-        else:
-            try: print(f"  {W}Kernel: {subprocess.check_output(['uname','-a'],timeout=5).decode().strip()}{RS}")
-            except: pass
-    elif choice=='2':
-        print(f"\n{C}[*] Ports/Services:{RS}")
-        if os.name=='nt':
-            try: print(subprocess.check_output('netstat -an',shell=True,timeout=10).decode()[:2000])
-            except: pass
-        else:
-            try: print(subprocess.check_output(['ss','-tuln'],timeout=10).decode()[:2000])
-            except: pass
-    elif choice=='5':
-        print(f"\n{C}[*] Vulnerability checks:{RS}")
-        if os.name!='nt':
-            try:
-                print(f"{Y}SUID:{RS}")
-                subprocess.run('find / -perm -4000 2>/dev/null',shell=True,timeout=10)
-            except: pass
-        print(f"{G}[+] Done.{RS}")
+    """System information dump"""
+    print(f"\n{G}[+] System Information Dump{RS}")
+    
+    if IS_WIN:
+        cmds = {
+            '1': 'systeminfo',
+            '2': 'tasklist /svc',
+            '3': 'wmic product get name,version',
+            '4': 'wmic qfe list',
+            '5': 'netstat -ano',
+            '6': 'whoami /priv'
+        }
+        cmd = cmds.get(choice, 'systeminfo')
+        out = _run(cmd)
+        print(f"  {Y}{out[:2000]}{RS}")
     else:
-        print(f"{Y}[!] Option not implemented.{RS}")
-    input(f"\n{Y}[+] Press Enter...{RS}")
+        cmds = {
+            '1': 'uname -a && cat /etc/os-release && lscpu 2>/dev/null || cat /proc/cpuinfo',
+            '2': 'ps aux && ss -tlnp',
+            '3': 'dpkg -l 2>/dev/null || rpm -qa 2>/dev/null || pacman -Q 2>/dev/null',
+            '4': 'dmesg | grep -i error | head -20',
+            '5': 'netstat -tulanp',
+            '6': 'find / -perm -4000 2>/dev/null'
+        }
+        cmd = cmds.get(choice, 'uname -a')
+        out = _run(cmd)
+        print(f"  {Y}{out[:2000]}{RS}")
+    
+    input(f"\n{Y}[+] Press Enter to continue...{RS}")
 
-def check_dependencies():
-    missing=[]
-    for tool in ['nmap','hydra','aircrack-ng','sqlmap','hashcat','john','msfconsole','ngrok']:
-        try:
-            subprocess.run(['where',tool] if os.name=='nt' else ['which',tool],capture_output=True,timeout=3)
-        except:
-            missing.append(tool)
-    if missing:
-        print(f"{Y}[!] Missing: {', '.join(missing)}{RS}")
+def generate_password(length=16):
+    """Generate a strong random password"""
+    chars = string.ascii_letters + string.digits + "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    return ''.join(random.choice(chars) for _ in range(length))
+
+def hash_string(text, algo='sha256'):
+    """Hash a string using various algorithms"""
+    h = hashlib.new(algo)
+    h.update(text.encode())
+    return h.hexdigest()
+
+def port_scan_thread(target, port, timeout=1):
+    """Threaded port scanner helper"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        result = s.connect_ex((target, port))
+        s.close()
+        return port, result == 0
+    except:
+        return port, False
+
+def scan_ports_threaded(target, ports, threads=100):
+    """Multi-threaded port scanning"""
+    print(f"{G}[+] Scanning {target} with {threads} threads...{RS}")
+    results = []
+    from concurrent.futures import ThreadPoolExecutor
+    
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        futures = {executor.submit(port_scan_thread, target, p): p for p in ports}
+        for future in concurrent.futures.as_completed(futures):
+            port, is_open = future.result()
+            if is_open:
+                try:
+                    service = socket.getservbyport(port)
+                except:
+                    service = 'unknown'
+                results.append((port, service))
+    
+    return results
+
+def print_banner(text, color=C):
+    """Print a formatted banner"""
+    width = len(text) + 4
+    print(f"{color}╔{'═' * width}╗{RS}")
+    print(f"{color}║  {W}{text}{color}  ║{RS}")
+    print(f"{color}╚{'═' * width}╝{RS}")
+
+def save_to_file(filename, data):
+    """Save data to file"""
+    with open(filename, 'w') as f:
+        f.write(data)
+    print(f"{G}[+] Saved to {filename}{RS}")
+
+def load_wordlist(path):
+    """Load a wordlist file"""
+    try:
+        with open(path, 'r', errors='ignore') as f:
+            return [line.strip() for line in f if line.strip()]
+    except:
+        return []
+
+def check_root():
+    """Check if running as root/administrator"""
+    if IS_WIN:
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
     else:
-        print(f"{G}[+] All external tools found.{RS}")
+        return os.geteuid() == 0
+
+def get_public_ip():
+    """Get public IP address"""
+    try:
+        import requests
+        r = requests.get('https://api.ipify.org?format=json', timeout=10)
+        return r.json()['ip']
+    except:
+        return 'Unknown'
+
+def get_local_ip():
+    """Get local IP address"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return '127.0.0.1'
+
+def loading_animation(duration=2):
+    """Show a loading animation"""
+    import itertools
+    spinner = itertools.cycle(['|', '/', '-', '\\'])
+    end_time = time.time() + duration
+    while time.time() < end_time:
+        print(f'\r{spinner.__next__()} Working...', end='', flush=True)
+        time.sleep(0.1)
+    print('\r' + ' ' * 30, end='\r')
