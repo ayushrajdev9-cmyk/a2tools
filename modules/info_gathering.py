@@ -101,7 +101,7 @@ def dns_enum():
     out = _run(f'nslookup -type=MX {domain} 2>/dev/null || host -t MX {domain} 2>/dev/null')
     print(f"  {Y}{out or 'Not available'}{RS}")
     
-    print(f"\n{W TXT Records:{RS}")
+    print(f"\n{W}TXT Records:{RS}")
     out = _run(f'nslookup -type=TXT {domain} 2>/dev/null || host -t TXT {domain} 2>/dev/null')
     print(f"  {Y}{out or 'Not available'}{RS}")
     
