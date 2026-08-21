@@ -11,7 +11,7 @@ try:
     init(autoreset=True)
 except:
     class Fore: RED=GREEN=YELLOW=BLUE=MAGENTA=CYAN=WHITE='';RESET=''
-    Style=Fore
+    class Style: RESET_ALL='';BRIGHT='';DIM='';NORMAL=''
 
 R=Fore.RED; G=Fore.GREEN; Y=Fore.YELLOW; B=Fore.BLUE
 M=Fore.MAGENTA; C=Fore.CYAN; W=Fore.WHITE; RS=Style.RESET_ALL
@@ -142,7 +142,7 @@ def log_wiping():
     print(f"\n{G}[+] Log Wiping Tools{RS}")
     
     print(f"\n{W}Windows Logs:{RS}")
-    print(f"  {W}•{RS} Clear event logs: wevtutil el | ForEach-Object { wevtutil cl $_ }")
+    print(f"  {W}•{RS} Clear event logs: wevtutil el | ForEach-Object {{ wevtutil cl $_ }}")
     print(f"  {W}•{RS} wevtutil cl Application")
     print(f"  {W}•{RS} wevtutil cl System")
     print(f"  {W}•{RS} wevtutil cl Security")
@@ -154,7 +154,7 @@ def log_wiping():
     print(f"  {W}•{RS} Clear kern log: > /var/log/kern.log")
     print(f"  {W}•{RS} Clear bash history: history -c && > ~/.bash_history")
     print(f"  {W}•{RS} Remove journalctl: journalctl --rotate && journalctl --vacuum-time=1s")
-    print(f"  {W}•{RS} Wipe all: find /var/log -type f -exec cp /dev/null {} \\;")
+    print(f"  {W}•{RS} Wipe all: find /var/log -type f -exec cp /dev/null {{}} \\;")
     
     print(f"\n{W}Application Logs:{RS}")
     print(f"  {W}•{RS} Wipe browser history/clean")

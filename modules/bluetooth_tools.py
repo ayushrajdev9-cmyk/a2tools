@@ -10,7 +10,7 @@ try:
     init(autoreset=True)
 except:
     class Fore: RED=GREEN=YELLOW=BLUE=MAGENTA=CYAN=WHITE='';RESET=''
-    Style=Fore
+    class Style: RESET_ALL='';BRIGHT='';DIM='';NORMAL=''
 
 R=Fore.RED; G=Fore.GREEN; Y=Fore.YELLOW; B=Fore.BLUE
 M=Fore.MAGENTA; C=Fore.CYAN; W=Fore.WHITE; RS=Style.RESET_ALL

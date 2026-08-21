@@ -68,7 +68,10 @@ try:
 except ImportError:
     class Fore:
         RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = RESET = ''
-    Style = Fore
+        BLACK = LIGHTRED_EX = LIGHTGREEN_EX = LIGHTYELLOW_EX = LIGHTBLUE_EX = LIGHTMAGENTA_EX = LIGHTCYAN_EX = LIGHTWHITE_EX = ''
+    class Style:
+        RESET_ALL = ''
+        BRIGHT = DIM = NORMAL = ''
 
 R = Fore.RED
 G = Fore.GREEN

